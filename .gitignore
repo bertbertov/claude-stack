@@ -1,0 +1,29 @@
+# Local state
+_audit_state.json
+_archive/
+.DS_Store
+*.pyc
+__pycache__/
+
+# Secrets — never commit
+.env
+.env.local
+KEYS.env
+*.key
+*.pem
+credentials.json
+.credentials.json
+
+# Personal memory — never ships
+memory/
+projects/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Temp
+_tmp_*/
+tmp/
+*.log

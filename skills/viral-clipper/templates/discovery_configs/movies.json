@@ -1,0 +1,43 @@
+{
+  "_comment": "Action / superhero / blockbuster MOVIE clips niche. NOT music biopics.",
+  "niche": "movies",
+  "topic_filter": "Action movies, superhero films (Marvel, DC), blockbuster franchises (Mission Impossible, John Wick, Fast Furious, James Bond), epic fight scenes, big-budget action sequences. EXCLUDE: music biopics, documentaries about musicians, celebrity interviews unrelated to action movies, romance films, comedies without action.",
+
+  "queries": [
+    "Marvel best fight scenes",
+    "DC best action moments",
+    "John Wick fight scene",
+    "Mission Impossible stunt",
+    "James Bond best scenes",
+    "Avengers epic moments",
+    "best superhero fight",
+    "Fast Furious action scene",
+    "blockbuster action trailer 2026",
+    "Top Gun Maverick scenes",
+    "Dune fight scene",
+    "Spider-Man best moments",
+    "Batman action scenes"
+  ],
+
+  "channels": [
+    "@MovieclipsTRAILERS",
+    "@FilmIsNow",
+    "@MovieclipsCOMINGSOON"
+  ],
+
+  "filters": {
+    "min_duration_sec": 300,
+    "max_duration_sec": 7200,
+    "max_age_days": 30,
+    "min_views": 50000,
+    "languages": ["en"]
+  },
+
+  "limits": {
+    "_comment": "Same per-channel quota as ai_business — 1 video/day -> 6 clips -> 3 posts/day after throttling.",
+    "max_videos_per_query": 5,
+    "max_videos_per_channel": 3,
+    "max_new_videos_per_run": 1,
+    "max_pending_jobs": 3
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ~/.claude/hooks/deploy_agents.py",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python ~/.claude/hooks/design_conductor.py",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python ~/.claude/hooks/build_detector.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ~/.claude/hooks/skill_dedup_watch.py",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ~/.claude/hooks/post_compact_review.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>cinema · admin</title>
+<style>
+  :root{--bg:#0a0a0b;--panel:#141417;--line:#26262b;--txt:#fafafa;--mut:#8b8b94;--accent:#e0a13a;--ok:#5fbf7f;--err:#e06a5a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial;padding:1.5rem;max-width:720px;margin:0 auto}
+  h1{font-size:1.1rem;font-weight:700;letter-spacing:.2px}
+  h1 small{color:var(--mut);font-weight:400;font-size:.8rem;margin-left:.5rem}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.1rem;margin:1rem 0}
+  label{display:block;font-size:.78rem;color:var(--mut);margin:.7rem 0 .3rem}
+  input[type=text],input[type=file]{width:100%;background:#1d1d22;border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:.6rem .7rem;font:inherit}
+  button{font:inherit;color:#1a1206;background:var(--accent);border:none;border-radius:10px;padding:.6rem 1rem;font-weight:600;cursor:pointer;transition:transform .06s}
+  button:active{transform:scale(.98)}
+  button.ghost{background:#1d1d22;color:var(--txt);border:1px solid var(--line);font-weight:500;padding:.45rem .7rem}
+  button.danger{background:#2a1715;color:var(--err);border:1px solid #3a201d}
+  .prog{height:8px;background:#1d1d22;border-radius:6px;overflow:hidden;margin-top:.8rem;display:none}
+  .prog>i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+  .row{display:flex;align-items:center;gap:.6rem;padding:.7rem 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .t{flex:1;min-width:0}
+  .row .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .t span{font-size:.74rem;color:var(--mut)}
+  .badge{font-size:.68rem;padding:.15rem .5rem;border-radius:999px;border:1px solid var(--line)}
+  .badge.ready{color:var(--ok);border-color:#234} .badge.processing{color:var(--accent)} .badge.error{color:var(--err)}
+  .muted{color:var(--mut);font-size:.8rem}
+  a{color:var(--accent)}
+</style></head>
+<body>
+<h1>cinema <small>admin</small></h1>
+<div class="panel">
+  <b>Upload a movie</b>
+  <label>Title</label><input type="text" id="title" placeholder="e.g. The Movie (2024)">
+  <label>Movie file (MP4 ideal — H.264/AAC plays instantly)</label><input type="file" id="movie" accept="video/*,.mkv,.mp4,.avi,.mov">
+  <label>Subtitles (optional .srt / .vtt)</label><input type="file" id="subs" accept=".srt,.vtt">
+  <div class="prog" id="prog"><i id="bar"></i></div>
+  <p class="muted" id="upmsg" style="margin:.8rem 0 0"></p>
+  <div style="margin-top:.8rem"><button id="up">Upload</button></div>
+</div>
+<div class="panel">
+  <b>Movies</b> <span class="muted" id="cnt"></span>
+  <div id="list" style="margin-top:.5rem"><p class="muted">loading…</p></div>
+</div>
+<script>
+const KEY=new URLSearchParams(location.search).get('key')||'';
+const $=id=>document.getElementById(id);
+async function refresh(){
+  const r=await fetch('/api/list?key='+encodeURIComponent(KEY));
+  if(!r.ok){ $('list').innerHTML='<p class="muted">bad key — append ?key=YOURKEY to the URL</p>'; return; }
+  const items=await r.json(); $('cnt').textContent='· '+items.length;
+  if(!items.length){ $('list').innerHTML='<p class="muted">no movies yet</p>'; return; }
+  $('list').innerHTML='';
+  for(const m of items){
+    const room=location.origin+'/w/'+m.room;
+    const div=document.createElement('div'); div.className='row';
+    div.innerHTML=`<div class="t"><b>${esc(m.title)}</b><span>${m.has_subs?'subtitles · ':''}<a href="${room}" target="_blank">${room}</a></span></div>
+      <span class="badge ${m.status}">${m.status}</span>
+      <button class="ghost" data-c="${room}">Copy link</button>
+      <button class="danger" data-d="${m.id}">Delete</button>`;
+    $('list').appendChild(div);
+  }
+  document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{navigator.clipboard.writeText(b.dataset.c);b.textContent='Copied';setTimeout(()=>b.textContent='Copy link',1200);});
+  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{ if(!confirm('Delete this movie?'))return; const fd=new FormData();fd.append('key',KEY);fd.append('id',b.dataset.d); await fetch('/api/delete',{method:'POST',body:fd}); refresh(); });
+}
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+$('up').onclick=()=>{
+  const mv=$('movie').files[0], title=$('title').value.trim();
+  if(!title){$('upmsg').textContent='enter a title';return;}
+  if(!mv){$('upmsg').textContent='pick a movie file';return;}
+  const fd=new FormData(); fd.append('key',KEY); fd.append('title',title); fd.append('movie',mv);
+  if($('subs').files[0]) fd.append('subs',$('subs').files[0]);
+  const xhr=new XMLHttpRequest(); xhr.open('POST','/api/upload');
+  $('prog').style.display='block'; $('up').disabled=true; $('upmsg').textContent='uploading…';
+  xhr.upload.onprogress=e=>{ if(e.lengthComputable){ const p=Math.round(e.loaded/e.total*100); $('bar').style.width=p+'%'; $('upmsg').textContent='uploading '+p+'% ('+(e.loaded/1073741824).toFixed(2)+' / '+(e.total/1073741824).toFixed(2)+' GB)'; } };
+  xhr.onload=()=>{ $('up').disabled=false; if(xhr.status===200){ $('upmsg').textContent='uploaded — processing (faststart remux). It will show "ready" shortly.'; $('bar').style.width='100%'; $('title').value='';$('movie').value='';$('subs').value=''; setTimeout(refresh,1500); setTimeout(refresh,6000);} else { $('upmsg').textContent='upload failed: '+xhr.status+' '+xhr.responseText.slice(0,120);} };
+  xhr.onerror=()=>{ $('up').disabled=false; $('upmsg').textContent='upload error (network)'; };
+  xhr.send(fd);
+};
+refresh(); setInterval(refresh, 15000);
+</script></body></html>

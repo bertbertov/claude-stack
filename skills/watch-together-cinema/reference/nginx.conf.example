@@ -1,0 +1,32 @@
+# cinema.example.com -> uvicorn :8088. Put a subdomain DNS-only (grey cloud) if behind
+# Cloudflare — the free plan caps request bodies at 100 MB and restricts large video,
+# so uploads/streams MUST bypass the CF proxy. certbot --nginx adds the 443 block + redirect.
+# Unique map var name so it can't clash with another websocket map on the box.
+map $http_upgrade $cinema_conn_upgrade { default upgrade; '' close; }
+
+server {
+    listen 80;
+    server_name cinema.example.com;
+
+    client_max_body_size 0;          # allow multi-GB movie uploads
+    proxy_request_buffering off;     # stream uploads through, don't spool the whole file
+
+    # nginx serves the video directly = native byte-range (smooth seeking), offloads Python
+    location /media/ {
+        alias /opt/cinema/media/;
+        add_header Cache-Control "private, max-age=3600";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8088;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $cinema_conn_upgrade;   # websocket sync + signaling
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+}

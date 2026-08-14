@@ -74,7 +74,7 @@ These are checkable, which is the point. Felt quality is unfalsifiable.
 - Shadows take a colour cast, never pure black. `rgb(0,2,4)` reads better than `#000`.
 
 **Layout**
-- **Radius: two values, nothing between.** A 4/8/12/16/20/24 ladder is what makes a page look assembled.
+- **Radius: two values, nothing between.** A 4/8/12/16/20/24 ladder is what makes a page look assembled. Pill (`999px`) is free. **Device geometry is not a token** — a phone bezel's 42/32/17px is a physical shape being drawn, so exempt it from the budget rather than bending the design system around it.
 - Eyebrows **≤ ceil(sections / 3)**. Count `uppercase tracking` instances. Panel labels inside a card are a different job; give them a different class and do not count them.
 - Hero: headline **≤ 2 lines**, subtext **≤ 20 words**, **≤ 4 text elements**.
 - Consecutive image-text zigzags **≤ 2**. Distinct layout families **≥ 4** across 8 sections.
@@ -104,6 +104,7 @@ These are checkable, which is the point. Felt quality is unfalsifiable.
 - **Never fabricate client logos, awards, testimonials or metrics.** A marquee of *real integrations* is visually identical and entirely true. Invented logos imply clients that do not exist.
 - Real photo means a real URL with a real extension. Anything conceptual emits a delimited image-generation prompt block instead. **Never invent a link.**
 - **No div-built fake screenshots.** A live component showing real data is fine and better; a stack of divs pretending to be a product screenshot is not.
+- **The strongest premium device available is the real product, embedded.** If there is a live app, proxy it onto the marketing domain and put it in a browser chrome frame in an `<iframe>`, rather than shipping a picture of it. Same-origin so no `X-Frame-Options` can block it; a transparent link over the frame instead of an interactive iframe, because an iframe that eats the scroll wheel is worse than a static image. Nothing an illustrator can draw competes with a panel of numbers that changed since the visitor loaded the page.
 - If real user content is displayed, anonymize it. Publishing customer conversations exposes them.
 
 ---
@@ -121,6 +122,40 @@ grep -c 'class="eyebrow"' page.html         # <= ceil(sections/3)
 grep -o 'var(--accent)' page.html | wc -l   # <= ~6 including hover states
 ```
 
+**Two defects survive every mechanical pass above and every casual glance. Automate both.**
+
+**a. Run-together text.** Sibling `<span>`s with no `display:block` render as
+`"Messages handledOne deployment..."`. Grid and flex children are blockified so they
+look fine; a nested wrapper's children are not. Shipped twice before this became code:
+
+```js
+document.querySelectorAll('body *').forEach(p=>{
+  const ks=[...p.children].filter(k=>k.textContent.trim()&&k.offsetWidth);
+  for(let i=0;i<ks.length-1;i++){
+    const a=ks[i].getBoundingClientRect(), b=ks[i+1].getBoundingClientRect();
+    if(Math.abs(a.top-b.top)<4 && Math.abs(a.height-b.height)<8 && b.left-a.right<1.5)
+      console.warn('run-together', ks[i].className, ks[i+1].className);
+  }});
+```
+Exempt marquee loop groups: a seamless track *requires* its duplicated halves to touch.
+
+**b. Crushed imagery.** A photograph under a dark overlay dies silently and the
+section reads as flat black, which is the cheap look, not the expensive one. Sample
+painted luminance; **mean under ~35/255 means the image is not there**:
+
+```python
+from PIL import Image
+im = Image.open(shot).convert("L"); w, h = im.size
+band = im.crop((int(w*.55), int(h*.15), w, int(h*.85)))   # away from the copy
+px = list(band.getdata()); print(sum(px)/len(px), max(px))
+```
+
+Effective visibility is `image_opacity × (1 − scrim_alpha)`. At `opacity .5` under a
+`.62` scrim only **19%** of the photograph reaches the eye. **Use a two-axis scrim**
+rather than one heavy vertical one: a vertical pass for the top and bottom edges, plus
+a horizontal pass heavy under the copy that clears to `0` on the open side. Copy stays
+legible, image survives at full strength where nothing sits on it.
+
 Visual pass at **1440 / 768 / 375**. Score six pillars 1 to 4 — copy, visual, colour, type, spacing, experience — for a total out of 24, **assuming every pillar fails until a screenshot proves otherwise**. Publish gate: no pillar at 1, total ≥ 20.
 
 Also: console clean, no 404 assets, keyboard focus visible, reduced-motion path exercised, and **every script the page claims to support actually renders** without tofu.
@@ -130,6 +165,8 @@ Also: console clean, no 404 assets, keyboard focus visible, reduced-motion path 
 ⚠️ **A JS error in one script block kills every script after it.** A dead `getElementById` left behind after removing a section threw `null.appendChild`, which silently killed an unrelated component further down the file. **Read the console after any structural edit** — the symptom appears in a component you did not touch.
 
 ⚠️ **`resize_window` cannot go below Chrome's minimum window width** (~500px). Asking for 375 silently returns ~1448 and you will "verify" mobile at desktop width. Use devtools viewport emulation for anything under 500px.
+
+⚠️ **Patching a stylesheet that lives inside a source file: never locate the block by a string two blocks share.** A dashboard's CSS and its login page's CSS both opened `:root{--bg:#0d0d0f`, so a search for that string resolved the *login* block for both, and the patch wrote the dashboard stylesheet into the login page and the login stylesheet into a third injection point. The live product came back centred like a login card. **Anchor on exact line numbers or on a string proven unique, assert every boundary before writing, and assert the post-conditions too** (block count unchanged, file still parses). Cheap insurance on anything already serving traffic.
 
 **The mirror test:** would a design-led studio ship this, or does it read "an AI made a landing page"? If the latter, return to the gate. Do not tune spacing and re-ship.
 
@@ -149,6 +186,9 @@ Also: console clean, no 404 assets, keyboard focus visible, reduced-motion path 
 | Beautiful, nothing moves right | Motion added ad hoc | One personality named? | Lock easing, 3 durations, one entrance |
 | Janky scroll | Animating layout properties | Which properties animate | transform and opacity only |
 | Impressive tech, hollow page | Technology chosen first | Does the effect have a subject-grounded why | Cut it |
+| Page reads flat black despite 5 images | Scrim tuned by eye on a bright monitor | Mean luma of each image band | Two-axis scrim, raise image opacity |
+| Embedded app has a white slab beside it | `align-items:stretch` stretched the frame past the scaled iframe | Frame height vs `iframe_height × scale` | `align-items:start`, set height from the scale |
+| Embedded app is an unreadable smudge on mobile | One hard-coded scale for all widths | `width/logical_width` at 390px | Compute the scale; below ~760px hold a legible scale and crop |
 
 ---
 

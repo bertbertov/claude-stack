@@ -57,6 +57,9 @@ Then **re-derive the plan from a generic version of the same brief.** Anything t
 These are checkable, which is the point. Felt quality is unfalsifiable.
 
 **Type**
+- 🛑 **The single loudest AI tell is the 12px uppercase letter-spaced MONO micro-label** sitting above a grotesque-sans heading. That pairing is every AI-generated SaaS page. It reads "competent startup", never "expensive". Rejected in production 2026-08-14 with: *"fonts reveal ugly claude generic design."*
+- **Expensive means a display serif.** Luxury references (izanami, Vogue, private banks, editorial) run Didone or high-contrast serif at large size with air. If the brief says premium, fancy, luxury or expensive, reach for **Bodoni Moda, Cormorant, Cinzel, Playfair or Marcellus** and set eyebrows in **serif italic**, not mono uppercase. Fraunces and Instrument Serif stay banned; they are the LLM-favourite two.
+- Didone hairlines need care on dark grounds. Verify contrast at the real display size before shipping.
 - Text-range font sizes **≤ 4**. Weights **≤ 3**.
 - Ratio ~1.25 through text, opening to ~1.4 at display. A real canyon between body and hero is what makes a claim land.
 - Force comes from **size and tracking, not weight**. mParticle uses weight 700 fifteen times on its entire site.
@@ -121,6 +124,10 @@ grep -o 'var(--accent)' page.html | wc -l   # <= ~6 including hover states
 Visual pass at **1440 / 768 / 375**. Score six pillars 1 to 4 — copy, visual, colour, type, spacing, experience — for a total out of 24, **assuming every pillar fails until a screenshot proves otherwise**. Publish gate: no pillar at 1, total ≥ 20.
 
 Also: console clean, no 404 assets, keyboard focus visible, reduced-motion path exercised, and **every script the page claims to support actually renders** without tofu.
+
+⚠️ **A backgrounded tab throttles transitions and rAF.** `document.hidden === true` means CSS transitions may sit at their start value and screenshots capture a blank or pre-animation frame. **Assert `document.hidden` before trusting any visual check**, and never conclude "the element is broken" from a hidden-tab capture. This wasted several rounds on 2026-08-14, first misdiagnosed as a `mix-blend-mode` compositing bug.
+
+⚠️ **A JS error in one script block kills every script after it.** A dead `getElementById` left behind after removing a section threw `null.appendChild`, which silently killed an unrelated component further down the file. **Read the console after any structural edit** — the symptom appears in a component you did not touch.
 
 ⚠️ **`resize_window` cannot go below Chrome's minimum window width** (~500px). Asking for 375 silently returns ~1448 and you will "verify" mobile at desktop width. Use devtools viewport emulation for anything under 500px.
 

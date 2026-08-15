@@ -29,6 +29,50 @@ Written from the kamalov.systems build, 2026-08-14, where every value came out o
 
 ---
 
+## 0.5 If the brief says "premium" — measure the reference, do not imagine it
+
+**Go and instrument the site they named before writing a line.** "Premium" imagined
+is big type, big claims and a dense hero. Premium measured is almost always the
+opposite, and the gap between the two burns entire rebuilds.
+
+izanami-official.com, instrumented 2026-08-14 after two rejected attempts:
+
+| | izanami | the rejected build |
+|---|---|---|
+| largest type on the page | **45px** | 102px |
+| distinct font weights | **1** (400) | 3 |
+| distinct text colours | **3** | 6 |
+| sections | 6 | 9 |
+| images in 8,665px of page | 4 | 5 + a marquee |
+| nav | brand + 2 words, in dead corners | 5-link bar over the content |
+| CTA | a 46px hairline and a label | filled buttons |
+
+```js
+// paste into the reference page's console
+const f=new Set(),s=new Set(),w=new Set(),c=new Set();
+document.querySelectorAll('h1,h2,h3,p,a,span,div').forEach(e=>{const g=getComputedStyle(e);
+  if(e.textContent.trim()&&e.offsetHeight){f.add(g.fontFamily.split(',')[0]);
+  s.add(g.fontSize); w.add(g.fontWeight); c.add(g.color)}});
+console.log({bg:getComputedStyle(document.body).backgroundColor,
+  sizes:[...s].sort((a,b)=>parseFloat(b)-parseFloat(a)).slice(0,6),
+  weights:[...w], colors:[...c], fonts:[...f],
+  sections:document.querySelectorAll('section').length,
+  imgs:document.querySelectorAll('img').length,
+  canvas:document.querySelectorAll('canvas').length});
+```
+
+**The rule this produces: restraint is the luxury.** Expensive pages are mostly
+empty. Content occupies roughly a quarter of the page height, type stays small, one
+weight does everything, and the frame of the page carries quiet true information
+(live clocks, coordinates, an index) instead of marketing furniture. A loud page is
+never an expensive page, no matter how good the typeface is.
+
+**Ambient beats scroll-triggered.** A slow continuous canvas (drifting fog, ten soft
+radial blobs at ~0.03 alpha, paused by IntersectionObserver when off-screen) reads far
+more expensive than a page full of scroll reveals, and costs ~40 lines.
+
+---
+
 ## 1. Design read — one line, before anything
 
 > Reading this as: a `<page kind>` for `<audience>`, in a `<vibe>` language, leaning `<direction>`.

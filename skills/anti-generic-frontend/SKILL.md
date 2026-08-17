@@ -233,6 +233,9 @@ Also: console clean, no 404 assets, keyboard focus visible, reduced-motion path 
 | Page reads flat black despite 5 images | Scrim tuned by eye on a bright monitor | Mean luma of each image band | Two-axis scrim, raise image opacity |
 | Embedded app has a white slab beside it | `align-items:stretch` stretched the frame past the scaled iframe | Frame height vs `iframe_height × scale` | `align-items:start`, set height from the scale |
 | Embedded app is an unreadable smudge on mobile | One hard-coded scale for all widths | `width/logical_width` at 390px | Compute the scale; below ~760px hold a legible scale and crop |
+| Photos render as black rectangles in headless shots | `loading="lazy"` never fires in full-page captures | `img.complete` false before capture | Flip to eager, await all `complete`, then shoot |
+| Build contradicts its own UI-SPEC | Direction changed mid-build, spec did not | Read the spec against the build | Dated amendment section at the top of the spec |
+| Generated assets never shipped | Pipeline output not wired into markup | `grep -rq asset .` per file | Wire it in or delete it; inventory is not design |
 
 ---
 
@@ -255,3 +258,19 @@ Type: **Archivo variable at `wdth 115`**. The expanded width axis is the charact
 Signature: a full-bleed drift of real anonymized agent messages, each pill stamped with channel, language and reply latency. **Eleven languages is a claim no headline can prove; five scripts drifting past in peripheral vision proves it in two seconds.** It also removed any need for client logos.
 
 Three bugs found only by looking: metric values rendering inline with their captions, a hero wrapping to three lines against a two-line cap, and marquee chips wide enough to drift a dead gap through the viewport.
+
+---
+
+## v4 lessons, kamalov.systems rebuild, 2026-08-17
+
+**The spec is a living lock, not scripture.** The client picked the dark prototype over the light scheme the spec had locked. The wrong move is a build that contradicts its own spec file; the right move is a dated **amendment section at the top of UI-SPEC.md** that says exactly which clauses are superseded and which still govern. An auditor a month later cannot tell a deliberate divergence from drift unless you write it down.
+
+**`loading="lazy"` images never paint in headless full-page captures.** They load on scroll proximity, the capture resizes the viewport after the scroll, and the screenshot ships with black rectangles where the photography should be. Before any headless visual check: `document.querySelectorAll('img[loading=lazy]').forEach(i=>i.loading='eager')`, then await every `img.complete`. Symptom looked exactly like a broken scrim, which is the expensive misdiagnosis.
+
+**Metrics that can never go stale, demos that can never show zero.** A "days live" figure computed in JS from the real launch date is honest and self-updating; a hard-coded one is a lie in progress. And any live demo embedded on a marketing page must lead with **cumulative** numbers, because real-time figures fluctuate through zero and a visitor who sees "0 messages today" reads a dead product. Cumulative-first is not inflation, it is the only honest framing that survives an arbitrary visit time.
+
+**Grep every asset against the markup before ship.** Four transcript screenshots were generated, paid for, and referenced nowhere. A generation pipeline that is not wired into the page is inventory, not design. `for f in img/*; do grep -rq "$f" . || echo "orphan: $f"; done`
+
+**Shared chrome is generated, never copied.** Subpages get their header, footer and head from one template function (`_pages.py` pattern) with the copy rules asserted at generation time (`assert "—" not in html`). Pages that cannot drift apart do not drift apart, and the em-dash gate stops being something you remember to check.
+
+**Thin real pages beat missing pages.** A footer that links Privacy, Terms and Status needs those pages to exist, but a sole operator does not need legalese: three short, plainly-true pages in the same chrome beat both the absence and the boilerplate. A status page updated by hand, that says so, is more credible than an automated one that always says green.
